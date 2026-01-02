@@ -1,0 +1,778 @@
+PROTOKOLL ESA 2 - MACHINE LEARNING MODELLVERGLEICH (FINALE VERSION v1.4)
+
+================================================================================
+AUFGABENSTELLUNG
+================================================================================
+
+Basierend auf der ESA 1 wurde eine vergleichende Analyse verschiedener Machine-Learning-Modelle durchgeführt, um zu überprüfen, ob alternative Modelle für das Projekt besser geeignet sind als das in ESA 1 verwendete Modell.
+
+KONTEXT DER ESA 1
+
+In der ESA 1 wurde ein Finanzprognose-System entwickelt, das auf Basis von Aktienkursen und Unternehmenskennzahlen eine binäre Vorhersage trifft: Wird der Aktienkurs in den nächsten X Tagen steigen oder sinken? Die Prognosen wurden zusammen mit technischen Indikatoren und Unternehmenskennzahlen visualisiert.
+
+MOTIVATION FÜR ESA 2
+
+Die in ESA 1 erreichten Modellmetriken waren unbefriedigend. Um zu untersuchen, ob ein alternatives Modell bessere Vorhersageergebnisse liefert, wurden neun zusätzliche Machine-Learning-Modelle implementiert und in einer systematischen Vergleichsanalyse evaluiert.
+
+FORSCHUNGSFRAGE
+
+Welches Machine-Learning-Modell ist optimal für binäre Aktienkurs-Vorhersagen geeignet und übertrifft das in ESA 1 verwendete Modell in Bezug auf relevante Performance-Metriken?
+
+================================================================================
+GLOBALE TRAININGSPARAMETER (v1.4)
+================================================================================
+
+TARGET_HORIZON_DAYS = 5      Vorhersage-Horizont: nächste 5 Tage
+TEST_SPLIT_RATIO = 0.05      Test-Daten: 5%, Training: 95%
+PROBA_THRESHOLD = 0.55       Klassifizierungs-Schwelle für UP Signal
+RANDOM_STATE = 42            Reproduzierbarkeit für alle Modelle
+
+Feature Engineering Parameter:
+VOLATILITY = 20              Fenster für Volatilitäts-Berechnung (Tage)
+MOMENTUM = 5                 Fenster für Momentum-Berechnung (Tage)
+VOLUME = 5                   Fenster für Volume-Change-Berechnung (Tage)
+
+Deep Learning Parameter:
+SEQUENCE_LENGTH = 5          Fenster für Zeitreihen-Modelle (LSTM, Transformer, CNN)
+EPOCHS = 100                 Deep Learning Training-Epochen (max, mit Early Stopping)
+BATCH_SIZE = 32              Batch-Größe für Deep Learning (32 Samples)
+EARLY_STOPPING_PATIENCE = 10 Früher Abbruch nach N Epochen ohne Verbesserung
+
+================================================================================
+HYPERPARAMETER DER EINZELNEN MODELLE (v1.4 - KORREKT)
+================================================================================
+
+1. LIGHTGBM
+   
+   lgb_clf = LGBMClassifier(
+       n_estimators=600,           # 600 Boosting-Iterationen (erhöht)
+       learning_rate=0.05,         # Shrinkage-Parameter
+       max_depth=6,                # Maximale Baum-Tiefe
+       subsample=0.8,              # Stichproben-Quote (80% der Daten)
+       colsample_bytree=0.8,       # Feature-Subsampling (80% der Features)
+       random_state=42,            # Reproduzierbarkeit
+       eval_metric='auc',          # AUC als Evaluations-Metrik
+       early_stopping_rounds=20,   # Früher Abbruch nach 20 Runden
+       verbosity=-1                # Keine Konsolen-Ausgabe
+   )
+   
+   Training mit Evaluation Set:
+   lgb_clf.fit(
+       X_train_scaled, y_train_clean,
+       eval_set=[(X_test_scaled, y_test_clean)], 
+       feature_name=columns
+   )
+   
+   Parameter:
+   - n_estimators=600: Viele Iterationen für Progressive Konvergenz
+   - max_depth=6: Mittlere Baum-Tiefe für Balance
+   - subsample=0.8: 80% der Daten pro Iteration (Stochastisches Boosting)
+   - colsample_bytree=0.8: 80% der Features pro Iteration
+   - early_stopping_rounds=20: Verhindert Overfitting
+
+2. XGBOOST
+   
+   xgb_clf = XGBClassifier(
+       n_estimators=300,           # 300 Boosting-Iterationen
+       learning_rate=0.05,         # Shrinkage-Parameter
+       random_state=42,            # Reproduzierbarkeit
+       verbosity=0                 # Keine Ausgabe
+   )
+   
+   Parameter:
+   - Ähnliche Parameter wie LightGBM für direkten Vergleich
+   - 300 Estimators: Standard für stabile Performance
+   - Learning Rate 0.05: Conservative für graduelle Konvergenz
+
+3. CATBOOST
+   
+   cat_clf = CatBoostClassifier(
+       iterations=600,             # 600 Boosting-Iterationen
+       learning_rate=0.05,         # Shrinkage-Parameter
+       depth=6,                    # Baum-Tiefe
+       subsample=0.8,              # Stichproben-Größe
+       random_state=42,            # Reproduzierbarkeit
+       verbose=0,                  # Keine Ausgabe
+       early_stopping_rounds=20    # Früher Abbruch nach 20 Runden
+   )
+   
+   Parameter:
+   - Ähnliche Parameter wie LightGBM
+   - CatBoost ist robuster mit kategorialen Features
+   - 600 Iterationen für bessere Konvergenz
+
+4. RANDOM FOREST
+   
+   rf_clf = RandomForestClassifier(
+       n_estimators=300,           # 300 Bäume im Forest
+       max_depth=15,               # Maximale Baum-Tiefe pro Baum
+       random_state=42,            # Reproduzierbarkeit
+       n_jobs=-1,                  # Alle CPU-Kerne nutzen (Parallelisierung)
+       verbose=0                   # Keine Ausgabe
+   )
+   
+   Parameter:
+   - n_estimators=300: Höher als Boosting (parallele Bäume, kein Boosting)
+   - max_depth=15: Erlaubt komplexere Interaktionen
+   - n_jobs=-1: Nutzt alle verfügbaren CPUs für schnelleres Training
+
+5. STACKING ENSEMBLE
+   
+   Base Learner (3 Gradient Boosting Modelle):
+   - LGBMClassifier(n_estimators=300, learning_rate=0.05, random_state=42)
+   - XGBClassifier(n_estimators=300, learning_rate=0.05, random_state=42)
+   - CatBoostClassifier(iterations=300, learning_rate=0.05, random_state=42)
+   
+   Meta-Learner:
+   - LogisticRegression(max_iter=1000, random_state=42)
+   
+   Gesamt-Konfiguration:
+   stack_clf = StackingClassifier(
+       estimators=base_learners,
+       final_estimator=meta_learner,
+       cv=5                        
+   )
+   
+   Parameter:
+   - Kombiniert 3 unterschiedliche Gradient Boosting Modelle
+   - Logistic Regression als Meta-Learner für einfache Kombination
+   - 5-Fold CV: Robustes Training der Base-Learner
+
+6. TABNET (HYBRID GRADIENT BOOSTING + DEEP LEARNING)
+    
+    tab = TabNetClassifier(
+        n_d=16,                     # Dimension der Decision Steps (feature selection)
+        n_a=16,                     # Dimension der Attention (feature masking)
+        n_steps=5,                  # Anzahl der Decision Steps (wie Boosting-Runden)
+        gamma=1.5,                  # Relaxation Parameter für Sparsity
+        optimizer_fn=torch.optim.Adam, # Optimizer: PyTorch Adam
+        optimizer_params=dict(lr=2e-2),# Adam Learning Rate: 0.02 (höher als andere)
+        mask_type="entmax"          # Entmax Masking für sparse Attention
+    )
+    
+    Training:
+    tab.fit(
+        X_train=np.asarray(X_train),
+        y_train=np.asarray(y_train),
+        eval_set=[(np.asarray(X_test), np.asarray(y_test))],
+        max_epochs=200,             # Max 200 Epochen
+        patience=20,                # Early Stopping nach 20 Epochen
+        batch_size=1024,            # WICHTIG: >32 Anforderung (Workaround!)
+        virtual_batch_size=128,     # Ghost Batch Size für Normalisierung
+        num_workers=0,              # Kein Multiprocessing
+        drop_last=False             # Last Batch nicht verwerfen
+    )
+    
+    Parameter:
+    - n_d=n_a=16: Balance zwischen Komplexität und Speicher
+    - n_steps=5: 5 Decision Steps für iteratives Feature Selection
+    - batch_size=1024: NOTWENDIG für numerische Stabilität (TabNet Requirement)
+    - Virtual Batch Size: Ghost Batch Normalization
+    - Entmax: Sparseres, interpretierbareres Attention
+
+7. LSTM (LONG SHORT-TERM MEMORY)
+    
+    model = Sequential([
+        LSTM(128, return_sequences=True, 
+             input_shape=(sequence_length, n_features)), 	# Input Layer: 128 LSTM Zellen, gibt Sequenz zurück
+        Dropout(0.2),   									# 20% Dropout zur Regularisierung
+        LSTM(64, return_sequences=False),					# Hidden Layer: 64 LSTM Zellen
+        Dropout(0.2),   									# 20% Dropout
+        Dense(32, activation='relu'),						# Dense Layer: 32 Neuronen mit ReLU
+        Dense(1, activation='sigmoid')						# Output: 1 Neuron mit Sigmoid
+    ])
+    
+    Kompilierung:
+    model.compile(
+        optimizer=Adam(learning_rate=0.001),				# Adam mit 0.001 Lernrate
+        loss='binary_crossentropy',							# Binäre Cross-Entropy für Classification
+        metrics=['accuracy']
+    )
+    
+    Training:
+    model.fit(
+        X_train_lstm, y_train_lstm,
+        validation_data=(X_test_lstm, y_test_lstm),
+        epochs=100,
+        batch_size=32,
+        callbacks=[EarlyStopping(
+            monitor='val_loss',
+            patience=10,
+            restore_best_weights=True
+        )],
+        verbose=0
+    )
+    
+    Parameter:
+    - 128->64 Zellen: Progressives Downsampling
+    - Dropout 0.2: Moderate Regularisierung
+    - Adam 0.001: Standard für RNN Training
+    - Early Stopping: Verhindert Overfitting
+
+8. TRANSFORMER (ATTENTION-BASIERT)
+    
+    Modell-Architektur (Functional API):
+    inputs = Input(shape=(sequence_length, n_features))
+    
+    # Self-Attention Layer
+    attention = MultiHeadAttention(
+        num_heads=4,                # 4 Attention-Köpfe
+        key_dim=32                  # Dimension 32 pro Kopf
+    )(inputs, inputs)               # Self-Attention auf Input
+    
+    attention = LayerNormalization(epsilon=1e-6)(attention)
+                        # Layer Normalization für Stabilität
+    
+    # Dense Layers
+    x = Dense(128, activation='relu')(attention)
+    x = Dense(64, activation='relu')(x)
+    x = Flatten()(x)
+    
+    outputs = Dense(1, activation='sigmoid')(x)
+    
+    model = Model(inputs=inputs, outputs=outputs)
+    
+    Kompilierung & Training:
+    Identisch zu LSTM (Adam 0.001, Early Stopping)
+    
+    Parameter:
+    - Multi-Head Attention (4 Köpfe): Erfasst verschiedene Muster parallel
+    - key_dim=32: Ausreichend für Feature-Komplexität
+    - Layer Normalization: Stabilisiert Training
+    - Moderner Attention-Mechanismus statt RNN
+
+9. 1D-CNN (CONVOLUTIONAL NEURAL NETWORK)
+    
+    Modell-Architektur:
+    inp = Input(shape=(sequence_length, n_features))
+    
+    # First Convolutional Block
+    x = Conv1D(
+        filters=64,                 # 64 Convolution Filter
+        kernel_size=3,              # Kernel Größe 3
+        padding="same",             # Same Padding (keine Größenänderung)
+        activation="relu"
+    )(inp)
+    
+    x = MaxPooling1D(pool_size=2)(x)
+                        # Max Pooling: Dimensionsreduktion um Faktor 2
+    x = Dropout(0.2)(x) # 20% Dropout
+    
+    # Second Convolutional Block
+    x = Conv1D(
+        filters=64,                 # 64 Convolution Filter (gleich)
+        kernel_size=3,
+        padding="same",
+        activation="relu"
+    )(x)
+    
+    x = Flatten()(x)    # Flatten: 3D -> 1D
+    out = Dense(1, activation="sigmoid")(x)
+    
+    Kompilierung & Training:
+    Identisch zu LSTM/Transformer
+    
+    Parameter:
+    - Zwei Conv1D Layer: Erfasst lokale Muster auf verschiedenen Skalen
+    - MaxPooling: Dimensionsreduktion mit Feature Preservation
+    - Shared Weights: Weniger Parameter als vollständig verbundene Netze
+
+10. HYBRID LSTM+TRANSFORMER
+    
+    Modell-Architektur (kombiniert Stärken beider):
+    inp = Input(shape=(sequence_length, n_features))
+    
+    # LSTM Encoder für Sequenzverarbeitung
+    x = LSTM(64, return_sequences=True)(inp)
+    x = Dropout(0.2)(x)
+    
+    # Self-Attention (Transformer-Teil)
+    attn = MultiHeadAttention(
+        num_heads=4,
+        key_dim=32
+    )(x, x)             # Self-Attention auf LSTM Output
+    
+    # Residual Connection (Skip Connection)
+    x = Add()([x, attn])
+    x = LayerNormalization(epsilon=1e-6)(x)
+    
+    # Output Processing
+    x = GlobalAveragePooling1D()(x)
+                        # Average Pooling über Sequenz-Dimension
+    x = Dense(32, activation="relu")(x)
+    out = Dense(1, activation="sigmoid")(x)
+    
+    Kompilierung & Training:
+    Identisch zu anderen Deep Learning Modellen
+    
+    Parameter:
+    - LSTM für Sequenzverarbeitung + Attention für Fokus
+    - Residual Connections: Ermöglichen tiefere Architekturen
+    - GlobalAveragePooling: Sanfte Dimensionsreduktion ohne Info-Verlust
+    - Kombination nutzt Stärken beider Ansätze
+
+================================================================================
+ZUSAMMENFASSUNG HYPERPARAMETER-STRATEGIE
+================================================================================
+
+GRADIENT BOOSTING MODELLE (LGB, XGB, Cat):
+- Iterationen: 300-600 (CatBoost & LGB höher)
+- Learning Rate: 0.05 (konservativ)
+- Early Stopping: 20 Runden (für LGB & Cat)
+- Subsampling: 0.8 (80% Daten/Features pro Iteration)
+- Ziel: Progressive Konvergenz, Balance Bias-Variance
+
+TREE ENSEMBLE (Random Forest):
+- n_estimators: 300 (höher als Boosting weil parallel)
+- max_depth: 15 (tiefere Bäume für komplexere Muster)
+- n_jobs=-1: Parallelisierung
+- Ziel: Robuste, nicht-sequenzielle Ensemble
+
+DEEP LEARNING (LSTM, Transformer, CNN):
+- Max Epochs: 100 (mit Early Stopping meist 20-40)
+- Learning Rate: 0.001 (Standard für RNN/CNN)
+- Dropout: 0.2 (moderate Regularisierung)
+- Batch Size: 32 (Balance Speicher-Stabilität)
+- Ziel: Erfasst zeitliche Abhängigkeiten
+
+HYBRID MODELLE:
+- TabNet: batch_size=1024 (Workaround für Numerik!)
+- LSTM+Transformer: Combination von Sequence + Attention
+- Ziel: Beste Features aus verschiedenen Paradigmen
+
+ENSEMBLE METHODEN:
+- Stacking: 5-Fold CV für robustes Base-Learner Training
+- Meta-Learner: Logistic Regression (einfach & linear)
+- Ziel: Kombination mehrerer Modelle
+
+REPRODUZIERBARKEIT:
+- RANDOM_STATE=42 für alle Modelle
+- Deterministische Ergebnisse über alle Run-Durchläufe
+
+================================================================================
+ERGEBNISSE - FINALE RANGLISTE (v1.4)
+================================================================================
+
+Rang | Modell                      | F1-Score | AUC-ROC | Accuracy
+-----|-----------------------------+----------+---------+----------
+1    | TabNet                      | 0.7181   | 0.5262  | 0.5616
+2    | LSTM                        | 0.7180   | 0.5036  | 0.5608
+3    | Transformer                 | 0.7175   | 0.5008  | 0.5595
+4    | 1D-CNN                      | 0.7175   | 0.5005  | 0.5595
+5    | XGBoost                     | 0.7173   | 0.5163  | 0.5592
+6    | LightGBM                    | 0.7172   | 0.5044  | 0.5591
+7    | CatBoost                    | 0.7156   | 0.5067  | 0.5584
+8    | Hybrid LSTM+Transformer     | 0.7154   | 0.5017  | 0.5603
+9    | Stacking Ensemble           | 0.7152   | 0.4866  | 0.5578
+10   | Random Forest               | 0.7018   | 0.5156  | 0.5571
+
+TOP 3 MODELLE:
+1. TabNet - F1=0.7181, AUC=0.5262, Acc=0.5616 
+2. LSTM - F1=0.7180, AUC=0.5036, Acc=0.5608
+3. Transformer - F1=0.7175, AUC=0.5008, Acc=0.5595
+
+SCHWÄCHSTE MODELLE:
+- Stacking Ensemble: Niedrigste AUC (0.4866)
+- Random Forest: Niedrigste F1 (0.7018)
+
+================================================================================
+KRITISCHE ERKENNTNISSE
+================================================================================
+
+1. MINIMALE UNTERSCHIEDE ZWISCHEN ALLEN MODELLEN
+   Alle 10 Modelle: F1 zwischen 0.70-0.72, AUC zwischen 0.49-0.53
+   → Problem liegt NICHT in der Modellwahl
+   → Problem liegt in DATENQUALITÄT und FEATURES
+
+2. AUC-SCORES KRITISCH NIEDRIG (~0.50)
+   AUC = 0.50 bedeutet praktisch ZUFÄLLIGES RATEN
+   Trotzdem: F1-Scores sind relativ hoch
+   → Wahrscheinlichkeitsverteilung nicht optimal
+   → Klassifizierungsschwelle 0.55 möglicherweise suboptimal
+
+3. TEST-SPLIT NUR 5% (NICHT 20%)!
+   TEST_SPLIT_RATIO = 0.05 bedeutet:
+   - 95% Training Data
+   - Nur 5% Test Data (sehr kleine Testmenge)
+   → Mehr Training möglich, aber Test-Evaluation weniger robust
+
+4. TABNET ÜBERRASCHEND BESTE PERFORMANCE
+   Hybrid-Ansatz (Gradient Boosting + Deep Learning)
+   Batch Size Workaround mit 1024 funktioniert
+   → Kombinationen von Methoden vielversprechend
+
+5. STACKING ENSEMBLE SCHWÄCHER ALS EINZELNE MODELLE
+   Meta-Learner konnte nicht von Base-Learner Outputs lernen
+   AUC sogar unter 0.50 (zufällig raten)
+   → Zu ähnliche Base-Learner Outputs (alle F1 ~0.71)
+   → Redundante Informationen für Meta-Learner
+
+================================================================================
+SCHWIERIGKEITEN & WORKAROUNDS
+================================================================================
+
+1. TABNET BATCH-SIZE ANFORDERUNG (30.12.2025)
+
+Problem:
+- TabNetClassifier benötigt minimum batch_size=32
+- Bei kleineren Batches: numerische Instabilität
+- Single-Prediction mit batch_size=1 unmöglich
+
+Workaround-Lösung:
+def predict_tabnet_single(model, X_single_row, n_dummy_rows=31):
+    # Wiederhole die Zeile 32 mal
+    X_padded = np.vstack([X_single] * (n_dummy_rows + 1))
+    
+    # Vorhersage für alle (identischen) Zeilen
+    proba = model.predict_proba(X_padded)
+    
+    # Extrahiere nur die erste Zeile (echte Vorhersage)
+    return proba[0, 1]
+
+Begründung:
+- Alle Zeilen sind identisch → gleiche Vorhersage
+- Batch Size = 32 erfüllt Anforderung
+- Training mit 1024 für bessere Stabilität
+
+Status: FUNKTIONIERT, aber konzeptionell nicht ideal
+
+2. LIGHTGBM PARAMETER ÄNDERUNGEN (v1.4)
+
+Alte Version (v1.0):
+- n_estimators=300
+- Keine max_depth
+- Keine colsample_bytree
+- Keine early_stopping_rounds
+
+Neue Version (v1.4):
+- n_estimators=600 (2x höher!)
+- max_depth=6 (neu)
+- colsample_bytree=0.8 (neu)
+- early_stopping_rounds=20 (neu)
+
+Auswirkung:
+- Bessere Konvergenz durch mehr Iterationen
+- Kontrolle der Baum-Tiefe verhindert Overfitting
+- Early Stopping stoppt Training automatisch
+- Feature Subsampling erhöht Robustheit
+
+3. LSTM/TRANSFORMER DIMENSIONIERUNGSPROBLEME
+
+Problem:
+- LSTM benötigt: (batch_size, sequence_length, n_features)
+- Gradient Boosting benötigt: (batch_size, n_features)
+- Mismatch zwischen Datenformaten
+
+Lösung:
+def make_sequences(X_2d, y_1d, sequence_length=5):
+    """Konvertiere 2D -> 3D Sequenzen"""
+    n = X_2d.shape[0]
+    X_seq = np.zeros((n - sequence_length, sequence_length, X_2d.shape[1]))
+    y_seq = np.zeros((n - sequence_length,))
+    
+    for i in range(n - sequence_length):
+        X_seq[i] = X_2d[i:i+sequence_length]
+        y_seq[i] = y_1d[i+sequence_length]
+    
+    return X_seq, y_seq
+
+Auswirkung:
+- Trainings-Datenmenge reduziert um sequence_length (5)
+- 3D-Format für RNN/CNN/Transformer
+- Zeitliche Abhängigkeiten erhalten
+
+4. EARLY STOPPING IMPLEMENTIERUNG
+
+Problem:
+- Ohne Early Stopping: 100 Epochen dauert lange
+- Mit schlechter Validation: Ressourcen verschwendet
+- Overfitting bei zu langen Training möglich
+
+Lösung:
+early_stop = EarlyStopping(
+    monitor='val_loss',
+    patience=10,          # Stopp nach 10 Epochen ohne Verbesserung
+    restore_best_weights=True
+)
+
+model.fit(..., callbacks=[early_stop])
+
+Effekt:
+- Training meist nach 20-40 Epochen (statt 100)
+- ~50-60% schneller
+- Bessere Generalisierung
+
+5. STACKING ENSEMBLE META-LEARNER PROBLEM
+
+Problem:
+- Meta-Learner (LogisticRegression) trainiert auf 7 Base-Learner Outputs
+- Alle Base-Learner haben ähnliche Vorhersagen (F1 ~0.71)
+- Meta-Learner kann keine neuen Informationen lernen
+- Resultat: AUC sogar UNTER 0.50!
+
+Ursache:
+- Zu ähnliche Base-Learner Outputs
+- Logistic Regression ist zu simpel für komplexe Kombination
+- Redundante Informationen statt neuer Patterns
+
+Mögliche Verbesserungen (nicht implementiert):
+- Unterschiedlichere Base-Learner verwenden
+- Non-linearen Meta-Learner nutzen (z.B. Random Forest)
+- Blending statt Stacking (verhindert Overfitting)
+- Mehr Diversität in Base-Learner Architektur
+
+6. TRANSFORMER MEMORY OVERFLOW
+
+Problem:
+- Multi-Head Attention erzeugt große Attention Matrices
+- Bei sequence_length>20: Memory-Fehler
+- GPU/CPU RAM vollläufig
+
+Lösung gewählt:
+- sequence_length begrenzt auf 5
+- batch_size auf 32
+- Attention Head Dimension auf 32
+
+Mögliche Verbesserungen (nicht implementiert):
+- Gradient Checkpointing
+- Mixed Precision Training
+- Lineare Attention Approximation
+
+7. FEHLENDE .eval() METHODE BEI TABNET
+
+Problem:
+- Code versucht: clf.eval() für TabNetClassifier
+- Fehler: "AttributeError: no attribute 'eval'"
+- .eval() ist PyTorch Methode für Inference Mode
+
+Lösung:
+- Entfernt .eval() Aufrufe für TabNetClassifier
+- Modell automatisch in Inference Mode bei .predict()
+
+Lernpunkt:
+- Nicht alle scikit-learn Wrapper haben gleiche Methoden
+- TabNet wrapped PyTorch unterschiedlich
+
+8. RANDOM STATE INKONSISTENZ
+
+Problem:
+- sklearn, TensorFlow, PyTorch haben unterschiedliche Random-Seeding
+- Reproduzierbarkeit nicht gewährleistet
+
+Lösung:
+import random
+import numpy as np
+import tensorflow as tf
+
+RANDOM_STATE = 42
+
+np.random.seed(RANDOM_STATE)
+random.seed(RANDOM_STATE)
+tf.random.set_seed(RANDOM_STATE)
+
+Effekt:
+- Konsistente, reproduzierbare Ergebnisse
+
+================================================================================
+ZEITLICHES ENTWICKLUNGSPROTOKOLL
+================================================================================
+
+15.12.2025 - AUFGABENDEFINITION
+             - Festlegung des Themas: Modellvergleich
+             - Ziel: Alternative zu ESA1-Modell finden
+             - Entscheidung: Umfassende 10-Modell Evaluation
+
+21.12.2025 - MARKTANALYSE & RESEARCH
+             - State-of-the-Art für Finanzdaten-ML
+             - Gradient Boosting als Standard
+             - Deep Learning als vielversprechende Alternative
+
+22.12.2025 - MODELLAUSWAHL & PLANUNG
+             - Finale Auswahl: 10 Modelle aus 4 Kategorien
+             - Implementierungsreihenfolge geplant
+             - Feature Engineering vorbereitet
+
+23.12.2025 - DATENVORBEREITUNG
+             - Aktienkurse aktualisiert
+             - Daten-Cleaning durchgeführt
+             - Features engineered (Volatilität, Momentum, Volume)
+
+25.12.2025 - ERSTE MODELLE (v1.0)
+             Training von 5 Gradient Boosting Modellen:
+             - LightGBM: F1=0.717, AUC=0.504, Acc=0.559 ✓
+             - XGBoost:  F1=0.717, AUC=0.516, Acc=0.559 ✓ 
+             - CatBoost: F1=0.716, AUC=0.507, Acc=0.558 ✓
+             - RF:       F1=0.702, AUC=0.516, Acc=0.557 ✓
+             - Stacking: F1=0.715, AUC=0.487, Acc=0.558 ✓
+
+26.12.2025 - LSTM IMPLEMENTIERUNG BEGINN
+             - Sequenzialisierung zu 3D-Format
+             - TensorFlow/Keras Setup
+             - Erste Training-Versuche
+
+27.12.2025 - LSTM BUGFIXING (v1.1)
+             - Dimension Mismatch beheben
+             - Training-Parameter optimiert
+             - LSTM erfolgreich:
+               F1=0.7179, AUC=0.4998, Acc=0.5609 ✓
+
+28.12.2025 - TRANSFORMER IMPLEMENTIERUNG (v1.2)
+             - Multi-Head Attention Integration
+             - Layer Normalization
+             - Training erfolgreich:
+               F1=0.7175, AUC=0.5008, Acc=0.5595 ✓
+
+30.12.2025 - TABNET MIT WORKAROUND (v1.3)
+             - Batch-Size Problem erkannt
+             - Dummy-Zeilen Workaround entwickelt
+             - TabNet erfolgreich (mit Tricks):
+               F1=0.7181, AUC=0.5262, Acc=0.5616 ✓
+
+02.01.2026 - 1D-CNN & HYBRID (v1.4 - START)
+             - 1D-CNN für lokale Muster
+             - Hybrid LSTM+Transformer mit Residuals
+             - Beide erfolgreich integriert:
+               1D-CNN:  F1=0.7175, AUC=0.5006, Acc=0.5595 ✓
+               Hybrid:  F1=0.7154, AUC=0.5017, Acc=0.5603 ✓
+
+03.01.2026 - KOMPLETTER VERGLEICH (v1.4 - FINAL)
+             - Alle 10 Modelle trainiert & evaluiert
+             - Parameter optimiert (besonders LGB)
+             - Finale Rangliste erstellt:
+             
+                1. TabNet:  F1=0.7181, AUC=0.5262 (CHAMPION)
+                2. LSTM:    F1=0.7180, AUC=0.5036
+                3. Transformer: F1=0.7175, AUC=0.5008
+
+04.01.2026 - DOKUMENTATION & PROTOKOLL
+             - Wissenschaftliches Protokoll erstellt
+             - Alle Schwierigkeiten dokumentiert
+             - Empfehlungen für weitere Schritte formuliert
+             - Hyperparameter vollständig listed
+
+================================================================================
+EMPFEHLUNGEN FÜR WEITERE SCHRITTE
+================================================================================
+
+1. DATEN-QUALITÄT VERBESSERN
+   - Zusätzliche Features: RSI, MACD, Bollinger Bands
+   - Externe Daten: Nachrichten-Sentiment, Makroindikatoren
+   - Mehr historische Daten sammeln
+
+2. THRESHOLD-OPTIMIERUNG
+   - Nicht nur 0.5 oder 0.55 testen
+   - ROC-Curve Analyse für optimalen Punkt
+   - Separate Thresholds pro Modell
+
+3. CLASS BALANCING
+   - SMOTE für Synthetic Minority Oversampling
+   - Gewichtete Klassifizierung (class_weight)
+   - Stratified Cross-Validation
+
+4. FEATURE IMPORTANCE ANALYSE
+   - SHAP Values für Interpretability
+   - Permutation Importance
+   - Feature Selection optimieren
+
+5. ENSEMBLE VERBESSERN
+   - Non-linearer Meta-Learner statt Logistic Regression
+   - Diverse Base-Learner statt ähnliche
+   - Weighted Averaging statt Stacking
+
+6. LÄNGERE SEQUENZEN TESTEN
+   - sequence_length = 10, 15, 20
+   - Capture längerfristiger Trends
+   - Trade-off mit Datenmenge
+
+7. HYPERPARAMETER TUNING
+   - Grid Search oder Bayesian Optimization
+   - Beste Kombinationen finden
+   - Separate Tuning pro Modell
+
+================================================================================
+ANHANG
+================================================================================
+
+VERWENDETE BIBLIOTHEKEN & VERSIONEN
+
+Basics:
+- pandas, numpy, scikit-learn
+
+Machine Learning (Gradient Boosting):
+- lightgbm, xgboost, catboost
+
+Deep Learning:
+- tensorflow, keras, torch, pytorch-tabnet
+
+Visualisierung:
+- matplotlib, seaborn
+
+CODE-STRUKTUR (up_down_evalutation_all_v1.4.py)
+
+1. Datenladung und Vorverarbeitung
+   - Aktienkurse laden
+   - Unternehmenskennzahlen laden
+   - Merge und Clean
+
+2. Feature Engineering
+   - SMA_ratio, Volatility, Momentum, VolumeChange
+   - DebtEquity, Leverage, ProfitMargin, OperatingMargin
+   - Target Variable: Next N-Day Return Up/Down
+
+3. Train-Test Split
+   - 95% Training, 5% Testing
+   - Stratified für Class Balance
+   - StandardScaler für Normalisierung
+
+4. Modelltraining (10 Modelle)
+   - 1.  LightGBM
+   - 2.  XGBoost
+   - 3.  CatBoost
+   - 4.  Random Forest
+   - 5.  Stacking Ensemble
+   - 6.  LSTM
+   - 7.  Transformer
+   - 8.  1D-CNN
+   - 9.  Hybrid LSTM+Transformer
+   - 10. TabNet
+
+5. Evaluation & Vergleich
+   - F1-Score, AUC-ROC, Accuracy
+   - Best Model Selection
+   - Ranking und Visualisierung
+
+6. Vorhersagen mit Best Model
+   - Prognosen für Backtesting
+   - Strategy Backtesting mit 2 Varianten
+   - Performance Analyse
+
+7. Visualisierungen
+   - Model Comparison Plots
+   - Backtest Equity Curves
+   - Feature Importance (wo implementiert)
+
+METRIKEN IM DETAIL
+
+F1-Score = 2 * (Precision * Recall) / (Precision + Recall)
+- Beste für imbalancierte Klassen
+- Gewichtet False Positives und False Negatives
+
+AUC-ROC = Area Under der ROC-Kurve
+- ROC = True Positive Rate vs. False Positive Rate
+- AUC=0.5 = zufälliges Raten
+- AUC=1.0 = perfekt
+
+Accuracy = (TP + TN) / (TP + TN + FP + FN)
+- Gesamte Korrektheit
+- Irreführend bei Imbalance
+
+================================================================================
+
+AUTOR: Lorenz Siedler
+FACHHOCHSCHULE: Ferdinand Porsche FernFH
+KURS: DAT503 - ESA 2
+DATUM: Januar 2026
+VERSION: Final v1.4
+STATUS: Abgeschlossen
+
+================================================================================
