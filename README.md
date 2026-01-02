@@ -96,7 +96,8 @@ Hybrid LSTM+Transformer 0.715363 0.501710 0.560342
 | 6 | LightGBM | Gradient Boosting | Schnell & effizient |
 | 7 | XGBoost | Gradient Boosting | Robust & beliebt |
 | 8 | CatBoost | Gradient Boosting | Mit kategorialen Features |
-| 9 | Stacking Ensemble | Meta-Learner | Kombiniert mehrere Modelle |
+| 9 | Random Forest | Tree Ensemble | Robust & interpretierbar |
+| 10 | Stacking Ensemble | Meta-Learner | Kombiniert mehrere Modelle |
 
 ---
 
