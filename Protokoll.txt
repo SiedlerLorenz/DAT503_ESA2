@@ -1,0 +1,92 @@
+15.12.2025 - Festlegung des Themas - 
+             Vergleich verschiedener Modelle zum bestehenden Modell nach Klassifikationsreport
+21.12.2025 - Marktanalyse nach derzeitigen State-of-the-Art Modelle 
+22.12.2025 - Marktanalyse nach derzeitigen State-of-the-Art Modelle 
+             Auswahl der Modelle
+23.12.2025 - Aktualisierung der Aktienkurse
+25.12.2025 - Erster Vergleich zwischen LightGBM,XGBoost, CatBoost, Random Forest, Stacking Ensemble - v1.0
+                ======================================================================
+                MODEL COMPARISON - TRAINING ALLE MODELLE
+                ======================================================================
+
+                [1/5] Training LightGBM...
+                ✓ F1=0.717, AUC=0.504, Acc=0.559
+                [2/5] Training XGBoost...
+                ✓ F1=0.717, AUC=0.516, Acc=0.559
+                [3/5] Training CatBoost...
+                ✓ F1=0.716, AUC=0.507, Acc=0.558
+                [4/5] Training Random Forest...
+                ✓ F1=0.702, AUC=0.516, Acc=0.557
+                [5/5] Training Stacking Ensemble...
+                ✓ F1=0.715, AUC=0.487, Acc=0.558
+
+                ======================================================================
+                ERGEBNISSE:
+                ======================================================================
+                    Modell       F1      AUC      Acc
+                    XGBoost 0.717331 0.516252 0.559248
+                    LightGBM 0.717215 0.504449 0.559108
+                    CatBoost 0.715615 0.506668 0.558407
+                    Stacking 0.715150 0.486559 0.557846
+                Random Forest 0.701794 0.515582 0.557145
+                ======================================================================
+
+                🏆 BESTES MODELL: XGBoost (F1=0.717)
+
+26.12.2025 - Hinzufügen von LSTM
+27.12.2025 - Hinzufügen von LSTM und Bugfixing
+                ======================================================================
+                ERGEBNISSE:
+                ======================================================================
+                Modell      F1      AUC      Acc
+                LSTM 0.71793 0.499819 0.560904
+                ======================================================================
+28.12.2025 - Hinzufügen von Transformers
+                ERGEBNISSE:
+                ======================================================================
+                    Modell       F1  AUC    Acc
+                Transformer 0.717538  0.5 0.5595
+                ======================================================================
+
+30.12.2025 - Hinzufügen von TabNet (v1.2)
+                Große Probleme, aber mit Workaround möglich 
+                ======================================================================
+                ERGEBNISSE:
+                ======================================================================
+                Modell       F1      AUC      Acc
+                TabNet 0.718074 0.526171 0.561632
+                ======================================================================
+
+02.01.2025 - Hinzufügen von 1D-CNN und Hybrid (LSTM + Transformer) (v1.3)
+                ERGEBNISSE:
+                ======================================================================
+                                Modell       F1      AUC    Acc
+                Hybrid LSTM+Transformer 0.717538 0.498443 0.5595
+                ======================================================================
+                ERGEBNISSE:
+                ======================================================================
+                Modell       F1      AUC    Acc
+                1D-CNN 0.717538 0.500626 0.5595
+                ======================================================================
+
+03.01.2025 - Durchlauf von allen Modellen:
+                ======================================================================
+                ERGEBNISSE:
+                ======================================================================
+                Modell       F1      AUC      Acc
+                TabNet      0.718074 0.526171 0.561632
+                LSTM        0.717967 0.503566 0.560763
+                Transformer 0.717538 0.500794 0.559500
+                1D-CNN      0.717538 0.500541 0.559500
+                XGBoost     0.717331 0.516252 0.559248
+                LightGBM    0.717215 0.504449 0.559108
+                CatBoost    0.715615 0.506668 0.558407
+                Hybrid LSTM+Transformer 0.715363 0.501710 0.560342
+                Stacking    0.715150 0.486559 0.557846
+                Random Forest 0.701794 0.515582 0.557145
+                ======================================================================
+
+                🏆 BESTES MODELL: TabNet (F1=0.718)
+
+
+
