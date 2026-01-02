@@ -297,30 +297,19 @@ def evaluate_model(
     df_test_full,
     proba_threshold=0.55,
     horizon_days=5,
-    model_type="sklearn"  # "sklearn" oder "lstm"
+    model_type="sklearn"  
     ):
 
     if model_type == "tabnet":
-        # TabNet: numpy arrays verwenden
         X_test_np = np.asarray(X_test)
         y_pred = clf.predict(X_test_np)
         y_pred_proba = clf.predict_proba(X_test_np)[:, 1]
     elif model_type == "lstm" or model_type == "cnn" or model_type == "hybrid":
-        # Für LSTM: y_pred und y_pred_proba aus 3D-Array berechnen
-
         y_pred_proba = clf.predict(X_test, verbose=0).ravel()
         y_pred = (y_pred_proba > 0.5).astype(int)
     else:
-        # Für sklearn-Modelle: wie bisher
         y_pred = clf.predict(X_test)
         y_pred_proba = clf.predict_proba(X_test)[:, 1]
-
-    # Testen des Modell mit Daten des Test-Datasets
-    #y_pred = clf.predict(X_test)
-    # Berechnung der Wahrscheinlichkeit, ob die Aktien steigen (1) oder nicht (0) 
-    # -> clf.predict_proba(X_test) gibt ein 2D-Array zurück mit 1.Spalte, Wahrscheinlichkeit, dass der Kurs fällt und 2. Spalte, Wahrscheinlichkeit, dass der Kurs steigt
-    # [:, 1] -> nehme nur die zweite Spalte
-    #y_pred_proba = clf.predict_proba(X_test)[:, 1]
 
     # Ausgabe des Klassifikationsreports (wie gut passt das Modell zu den Test Daten (wie gut ist die Modell-Leistung))
     print("=== Klassifikationsreport (Test) ===")
@@ -1130,31 +1119,7 @@ def main():
     # Verwenden der Target Spalte als Ergebnis
     y_test = test_df["Target"]
 
-    # LightGBM Klassifier konfigurieren
-    '''
-    clf = LGBMClassifier(
-        n_estimators=600,
-        learning_rate=0.05,
-        max_depth=6,
-        subsample=0.8,
-        colsample_bytree=0.8,
-        random_state=42,
-    )
-    # Modell mit Trainingsdaten füttern
-    clf.fit(X_train, y_train)
-
-    # Aufruf der evaluate_model-Funktion - Modell-Metriken, Mini-Backtest
-    evaluate_model(
-        clf,
-        X_train, y_train,
-        X_test, y_test,
-        df_test_full=test_df,
-        proba_threshold=PROBA_THRESHOLD,
-        horizon_days=TARGET_HORIZON_DAYS,
-    )
-    '''
-
-        # ===== MODELL-VERGLEICH STARTEN =====
+    # ===== MODELL-VERGLEICH STARTEN =====
     print("\n" + "="*80)
     print("🚀 STARTE MODELL-VERGLEICH")
     print("="*80)
@@ -1178,24 +1143,9 @@ def main():
     model_name_key = best_model_name.lower().replace(' ', '_').replace('lightgbm', 'lgb').replace('xgboost', 'xgb').replace('catboost', 'cat').replace('random_forest', 'rf').replace('stacking_ensemble', 'stack').replace('hybrid_lstm+transformer', 'hybrid').replace('1d-cnn', 'cnn')
     clf = trained_models.get(model_name_key)
 
-    '''
-    clf = trained_models[
-        best_model_name.lower()
-        .replace(' ', '_')
-        .replace('lightgbm', 'lgb')
-        .replace('xgboost', 'xgb')
-        .replace('catboost', 'cat')
-        .replace('random_forest', 'rf')
-        .replace('stacking_ensemble', 'stack')
-    ]  
-    '''
     if clf is None:
         print(f"[WARNING] Modell '{best_model_name}' nicht in trained_models gefunden.")
         print(f"[INFO] Verfügbare Modelle: {list(trained_models.keys())}")
-        # Fallback: Nutze das erste verfügbare Modell
-        #clf = list(trained_models.values())[0]
-        #best_model_name = list(trained_models.keys())[0]
-        #print(f"[INFO] Nutze Fallback: {best_model_name}")
     elif best_model_name == "TabNet":
         evaluate_model(
             clf,

@@ -725,6 +725,11 @@ EMPFEHLUNGEN FÜR WEITERE SCHRITTE
    - Beste Kombinationen finden
    - Separate Tuning pro Modell
 
+8. FEATURE SCALING / STANDARDISIERUNG
+   - Deep Learning Requirement: LSTM/Transformer/TabNet konvergieren schlecht ohne Skalierung (unterschiedliche Wertebereiche).
+   - RobustScaler nutzen: Besser bei Finanzdaten mit Ausreißern als der aktuelle StandardScaler.
+   - Performance-Boost: Wahrscheinlich signifikanter Einfluss auf die aktuell schwachen AUC-Werte der NN-Modelle.
+
 ================================================================================
 ANHANG
 ================================================================================
