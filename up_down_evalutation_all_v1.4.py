@@ -1,3 +1,14 @@
+#================================================================================
+#
+#AUTOR: Lorenz Siedler
+#FACHHOCHSCHULE: Ferdinand Porsche FernFH
+#KURS: DAT503 - ESA 2
+#DATUM: Januar 2026
+#VERSION: Final v1.4
+#STATUS: Abgeschlossen
+#
+#================================================================================
+
 import pandas as pd
 import numpy as np
 from pathlib import Path
