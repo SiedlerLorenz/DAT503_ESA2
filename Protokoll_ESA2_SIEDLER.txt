@@ -1,22 +1,42 @@
 PROTOKOLL ESA 2 - MACHINE LEARNING MODELLVERGLEICH (FINALE VERSION v1.4)
 
 ================================================================================
+
+AUTOR: Lorenz Siedler
+FACHHOCHSCHULE: Ferdinand Porsche FernFH
+KURS: DAT503 - ESA 2
+DATUM: Januar 2026
+VERSION: Final v1.4
+STATUS: Abgeschlossen
+
+================================================================================
+
+================================================================================
 AUFGABENSTELLUNG
 ================================================================================
 
-Basierend auf der ESA 1 wurde eine vergleichende Analyse verschiedener Machine-Learning-Modelle durchgeführt, um zu überprüfen, ob alternative Modelle für das Projekt besser geeignet sind als das in ESA 1 verwendete Modell.
+Basierend auf der ESA 1 wurde eine vergleichende Analyse verschiedener Machine-Learning-Modelle 
+durchgeführt, um zu überprüfen, ob alternative Modelle für das Projekt besser geeignet sind 
+als das in ESA 1 verwendete Modell.
 
 KONTEXT DER ESA 1
 
-In der ESA 1 wurde ein Finanzprognose-System entwickelt, das auf Basis von Aktienkursen und Unternehmenskennzahlen eine binäre Vorhersage trifft: Wird der Aktienkurs in den nächsten X Tagen steigen oder sinken? Die Prognosen wurden zusammen mit technischen Indikatoren und Unternehmenskennzahlen visualisiert.
+In der ESA 1 wurde ein Finanzprognose-System entwickelt, das auf Basis von Aktienkursen und 
+Unternehmenskennzahlen eine binäre Vorhersage trifft: Wird der Aktienkurs in den nächsten X Tagen 
+steigen oder sinken? Die Prognosen wurden zusammen mit Aktienkurs, technischen Indikatoren und 
+Unternehmenskennzahlen visualisiert.
 
 MOTIVATION FÜR ESA 2
 
-Die in ESA 1 erreichten Modellmetriken waren unbefriedigend. Um zu untersuchen, ob ein alternatives Modell bessere Vorhersageergebnisse liefert, wurden neun zusätzliche Machine-Learning-Modelle implementiert und in einer systematischen Vergleichsanalyse evaluiert.
+Die in ESA 1 erreichten Modellmetriken waren unbefriedigend. Um zu untersuchen, 
+ob ein alternatives Modell bessere Vorhersageergebnisse liefert, 
+wurden neun zusätzliche Machine-Learning-Modelle implementiert 
+und in einer systematischen Vergleichsanalyse evaluiert.
 
 FORSCHUNGSFRAGE
 
-Welches Machine-Learning-Modell ist optimal für binäre Aktienkurs-Vorhersagen geeignet und übertrifft das in ESA 1 verwendete Modell in Bezug auf relevante Performance-Metriken?
+Welches Machine-Learning-Modell ist optimal für binäre Aktienkurs-Vorhersagen geeignet 
+und übertrifft das in ESA 1 verwendete Modell in Bezug auf relevante Performance-Metriken?
 
 ================================================================================
 GLOBALE TRAININGSPARAMETER (v1.4)
@@ -39,7 +59,7 @@ BATCH_SIZE = 32              Batch-Größe für Deep Learning (32 Samples)
 EARLY_STOPPING_PATIENCE = 10 Früher Abbruch nach N Epochen ohne Verbesserung
 
 ================================================================================
-HYPERPARAMETER DER EINZELNEN MODELLE (v1.4 - KORREKT)
+HYPERPARAMETER DER EINZELNEN MODELLE (v1.4)
 ================================================================================
 
 1. LIGHTGBM
@@ -220,8 +240,7 @@ HYPERPARAMETER DER EINZELNEN MODELLE (v1.4 - KORREKT)
         key_dim=32                  # Dimension 32 pro Kopf
     )(inputs, inputs)               # Self-Attention auf Input
     
-    attention = LayerNormalization(epsilon=1e-6)(attention)
-                        # Layer Normalization für Stabilität
+    attention = LayerNormalization(epsilon=1e-6)(attention) # Layer Normalization für Stabilität
     
     # Dense Layers
     x = Dense(128, activation='relu')(attention)
@@ -254,19 +273,18 @@ HYPERPARAMETER DER EINZELNEN MODELLE (v1.4 - KORREKT)
         activation="relu"
     )(inp)
     
-    x = MaxPooling1D(pool_size=2)(x)
-                        # Max Pooling: Dimensionsreduktion um Faktor 2
-    x = Dropout(0.2)(x) # 20% Dropout
+    x = MaxPooling1D(pool_size=2)(x)    # Max Pooling: Dimensionsreduktion um Faktor 2
+    x = Dropout(0.2)(x)                 # 20% Dropout
     
     # Second Convolutional Block
     x = Conv1D(
-        filters=64,                 # 64 Convolution Filter (gleich)
+        filters=64,                     # 64 Convolution Filter (gleich)
         kernel_size=3,
         padding="same",
         activation="relu"
     )(x)
     
-    x = Flatten()(x)    # Flatten: 3D -> 1D
+    x = Flatten()(x)                    # Flatten: 3D -> 1D
     out = Dense(1, activation="sigmoid")(x)
     
     Kompilierung & Training:
@@ -290,15 +308,14 @@ HYPERPARAMETER DER EINZELNEN MODELLE (v1.4 - KORREKT)
     attn = MultiHeadAttention(
         num_heads=4,
         key_dim=32
-    )(x, x)             # Self-Attention auf LSTM Output
+    )(x, x)                             # Self-Attention auf LSTM Output
     
     # Residual Connection (Skip Connection)
     x = Add()([x, attn])
     x = LayerNormalization(epsilon=1e-6)(x)
     
     # Output Processing
-    x = GlobalAveragePooling1D()(x)
-                        # Average Pooling über Sequenz-Dimension
+    x = GlobalAveragePooling1D()(x)     # Average Pooling über Sequenz-Dimension
     x = Dense(32, activation="relu")(x)
     out = Dense(1, activation="sigmoid")(x)
     
@@ -381,13 +398,13 @@ KRITISCHE ERKENNTNISSE
 
 1. MINIMALE UNTERSCHIEDE ZWISCHEN ALLEN MODELLEN
    Alle 10 Modelle: F1 zwischen 0.70-0.72, AUC zwischen 0.49-0.53
-   → Problem liegt NICHT in der Modellwahl
-   → Problem liegt in DATENQUALITÄT und FEATURES
+   → Problem liegt NICHT in der Modellwahl!
+   → Problem liegt in DATENQUALITÄT und FEATURES!
 
 2. AUC-SCORES KRITISCH NIEDRIG (~0.50)
    AUC = 0.50 bedeutet praktisch ZUFÄLLIGES RATEN
    Trotzdem: F1-Scores sind relativ hoch
-   → Wahrscheinlichkeitsverteilung nicht optimal
+   → Wahrscheinlichkeitsverteilung könnte nicht optimal sein
    → Klassifizierungsschwelle 0.55 möglicherweise suboptimal
 
 3. TEST-SPLIT NUR 5% (NICHT 20%)!
@@ -411,7 +428,7 @@ KRITISCHE ERKENNTNISSE
 SCHWIERIGKEITEN & WORKAROUNDS
 ================================================================================
 
-1. TABNET BATCH-SIZE ANFORDERUNG (30.12.2025)
+1. TABNET BATCH-SIZE ANFORDERUNG
 
 Problem:
 - TabNetClassifier benötigt minimum batch_size=32
@@ -434,7 +451,7 @@ Begründung:
 - Batch Size = 32 erfüllt Anforderung
 - Training mit 1024 für bessere Stabilität
 
-Status: FUNKTIONIERT, aber konzeptionell nicht ideal
+Status: FUNKTIONIERT, aber WORKAROUND
 
 2. LIGHTGBM PARAMETER ÄNDERUNGEN (v1.4)
 
@@ -445,10 +462,10 @@ Alte Version (v1.0):
 - Keine early_stopping_rounds
 
 Neue Version (v1.4):
-- n_estimators=600 (2x höher!)
-- max_depth=6 (neu)
-- colsample_bytree=0.8 (neu)
-- early_stopping_rounds=20 (neu)
+- n_estimators=600 (doppelt so hoch)
+- max_depth=6 (neuer Parameter)
+- colsample_bytree=0.8 (neuer Parameter)
+- early_stopping_rounds=20 (neuer Parameter)
 
 Auswirkung:
 - Bessere Konvergenz durch mehr Iterationen
@@ -456,7 +473,7 @@ Auswirkung:
 - Early Stopping stoppt Training automatisch
 - Feature Subsampling erhöht Robustheit
 
-3. LSTM/TRANSFORMER DIMENSIONIERUNGSPROBLEME
+3. LSTM/TRANSFORMER 3-DIMENSIONEN
 
 Problem:
 - LSTM benötigt: (batch_size, sequence_length, n_features)
@@ -484,7 +501,7 @@ Auswirkung:
 4. EARLY STOPPING IMPLEMENTIERUNG
 
 Problem:
-- Ohne Early Stopping: 100 Epochen dauert lange
+- Ohne Early Stopping: sehr lange Berechnungsdauer
 - Mit schlechter Validation: Ressourcen verschwendet
 - Overfitting bei zu langen Training möglich
 
@@ -498,7 +515,7 @@ early_stop = EarlyStopping(
 model.fit(..., callbacks=[early_stop])
 
 Effekt:
-- Training meist nach 20-40 Epochen (statt 100)
+- Training meist nach 20-40 Epochen abgeschlossen (statt 100 bis 200)
 - ~50-60% schneller
 - Bessere Generalisierung
 
@@ -552,6 +569,25 @@ Lösung:
 Lernpunkt:
 - Nicht alle scikit-learn Wrapper haben gleiche Methoden
 - TabNet wrapped PyTorch unterschiedlich
+
+8. FEHLENDE FEATURE IMPORTANCE BEI DEEP LEARNING MODELLEN
+
+Problem:
+- Klassische Modelle (XGBoost, RF, TabNet) liefern einfache Feature Importance "out-of-the-box".
+- Bei Zeitreihen-Modellen (LSTM, Transformer, CNN) fehlt diese direkte Interpretierbarkeit.
+- Keine native Möglichkeit im Skript zu sehen, warum das LSTM eine Entscheidung trifft.
+- 3D-Datenstruktur (Zeit × Feature) macht einfache Zuordnung unmöglich.
+
+Ursache:
+- "Black-Box" Natur von neuronalen Netzen.
+- Wichtigkeit eines Features kann sich über die Zeitschritte ändern (z.B. "Close" ist an Tag t-1 wichtig, an t-5 nicht).
+- Standard-Bibliotheken (Keras/TensorFlow) bieten keine direkte .feature_importances_ Methode an.
+
+Mögliche Verbesserungen (nicht implementiert):
+- SHAP (SHapley Additive exPlanations) DeepExplainer nutzen.
+- Integrated Gradients implementieren.
+- Attention-Weights beim Transformer visualisieren (als Proxy für Wichtigkeit).
+- Sequenz-basierte Permutation Importance (Rechenintensiv!)
 
 8. RANDOM STATE INKONSISTENZ
 
@@ -637,7 +673,7 @@ ZEITLICHES ENTWICKLUNGSPROTOKOLL
 
 03.01.2026 - KOMPLETTER VERGLEICH (v1.4 - FINAL)
              - Alle 10 Modelle trainiert & evaluiert
-             - Parameter optimiert (besonders LGB)
+             - Parameter optimiert
              - Finale Rangliste erstellt:
              
                 1. TabNet:  F1=0.7181, AUC=0.5262 (CHAMPION)
@@ -646,7 +682,7 @@ ZEITLICHES ENTWICKLUNGSPROTOKOLL
 
 04.01.2026 - DOKUMENTATION & PROTOKOLL
              - Wissenschaftliches Protokoll erstellt
-             - Alle Schwierigkeiten dokumentiert
+             - Schwierigkeiten dokumentiert
              - Empfehlungen für weitere Schritte formuliert
              - Hyperparameter vollständig listed
 
@@ -766,13 +802,3 @@ Accuracy = (TP + TN) / (TP + TN + FP + FN)
 - Gesamte Korrektheit
 - Irreführend bei Imbalance
 
-================================================================================
-
-AUTOR: Lorenz Siedler
-FACHHOCHSCHULE: Ferdinand Porsche FernFH
-KURS: DAT503 - ESA 2
-DATUM: Januar 2026
-VERSION: Final v1.4
-STATUS: Abgeschlossen
-
-================================================================================
