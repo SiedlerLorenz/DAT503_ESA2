@@ -25,9 +25,16 @@ ESA_2/
 ### **1. Python-Abhängigkeiten installieren**
 
 ```bash
+# Basics & Data Science
 pip install pandas numpy scikit-learn matplotlib seaborn
-pip install tensorflow keras
+
+# Deep Learning
+pip install tensorflow keras torch
+
+# Gradient Boosting Models
 pip install lightgbm xgboost catboost
+
+# TabNet (Hybrid Gradient Boosting + Deep Learning)
 pip install pytorch-tabnet
 ```
 
